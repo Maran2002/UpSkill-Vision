@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Koulen&display=swap");
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+footer {
+  background-image: url("./assests/footer-bg.png");
+}
+.welcomebg {
+  background-image: url("./assests/bg-down.png");
+  filter: drop-shadow(0 -10px -10px rgb(0 0 0 / 0.5));
+}
+.inner-shadow {
+  box-shadow: inset 0px 0px 5px 5px rgb(0 0 0 / 0.1);
+}
+.overlay {
+  position: fixed; /* Position relative to the viewport */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  z-index: 9999; /* Ensure it stays on top */
+}
