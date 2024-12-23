@@ -20,13 +20,13 @@ const Header = () => {
           </Link>
           <Link
             className="p-2 sm:p-3 focus:text-primary hover:text-primary transition-all font-koulen text-lg md:text-2xl cursor-pointer duration-300"
-            to="/"
+            to="/about"
           >
             About Us
           </Link>
           <Link
             className="p-2 sm:p-3 focus:text-primary hover:text-primary transition-all font-koulen text-lg md:text-2xl cursor-pointer duration-300"
-            to="/"
+            to="/contact"
           >
             Contact Us
           </Link>

@@ -1,17 +1,17 @@
 import React, { useState } from "react";
-// import { IoMdSearch } from "react-icons/io";
 import { CgProfile } from "react-icons/cg";
 import { MdMenu } from "react-icons/md";
 import { AiOutlineClose } from "react-icons/ai";
-import MainDashboard from "./sunComponents/MainDashboard";
-import Employees from "./sunComponents/Employees";
 import Participants from "./sunComponents/Participants";
 import Settings from "./sunComponents/Settings";
 import AvailableCourses from "./sunComponents/AvailableCourses";
 
-const ManagerDashboard = ({ handleLogout, logo, name, dashboardData }) => {
+const ParticipantDashboard = ({ handleLogout, logo, name, dashboardData }) => {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState("dashboard");
+
+  //   console.log("from ins dash", dashboardData);
+
   return (
     <>
       {" "}
@@ -33,27 +33,7 @@ const ManagerDashboard = ({ handleLogout, logo, name, dashboardData }) => {
               >
                 Dashboard
               </button>
-              <button
-                onClick={() => setPage("employees")}
-                type="button"
-                className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
-              >
-                Employees
-              </button>
-              <button
-                onClick={() => setPage("participants")}
-                type="button"
-                className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
-              >
-                Participants
-              </button>
-              <button
-                onClick={() => setPage("courses")}
-                type="button"
-                className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
-              >
-                Courses
-              </button>
+
               <button
                 onClick={() => setPage("settings")}
                 type="button"
@@ -97,36 +77,7 @@ const ManagerDashboard = ({ handleLogout, logo, name, dashboardData }) => {
                   >
                     Dashboard
                   </button>
-                  <button
-                    onClick={() => {
-                      setPage("employees");
-                      setOpen(false);
-                    }}
-                    type="button"
-                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
-                  >
-                    Employees
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPage("participants");
-                      setOpen(false);
-                    }}
-                    type="button"
-                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
-                  >
-                    Participants
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPage("courses");
-                      setOpen(false);
-                    }}
-                    type="button"
-                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
-                  >
-                    Courses
-                  </button>
+
                   <button
                     onClick={() => {
                       setPage("settings");
@@ -145,11 +96,11 @@ const ManagerDashboard = ({ handleLogout, logo, name, dashboardData }) => {
         <div className="flex flex-col w-4/5">
           <div className="flex flex-row flex-wrap items-center justify-around  h-max p-5 ">
             {/* <div className="flex  w-96 rounded-full inner-shadow h-max p-1 items-center m-2">
-              <div className="flex flex-row items-center">
-                <IoMdSearch className="text-gray-500 size-9 px-2" />
-                <p className="text-gray-500">Search here...</p>
-              </div>
-            </div> */}
+            <div className="flex flex-row items-center">
+              <IoMdSearch className="text-gray-500 size-9 px-2" />
+              <p className="text-gray-500">Search here...</p>
+            </div>
+          </div> */}
             <div className="flex flex-row items-center">
               <p className="font-koulen text-xl">{name}</p>
               <CgProfile className="size-9 px-1" />
@@ -162,19 +113,15 @@ const ManagerDashboard = ({ handleLogout, logo, name, dashboardData }) => {
             </button>
           </div>
           <div className="flex flex-col justify-center items-center font-bold text-4xl uppercase h-max">
-            <p className="text-primary">Manager Dashboard</p>
+            <p className="text-primary">Participant Dashboard</p>
           </div>{" "}
           {/*  Center part content to be added  */}
           {page === "dashboard" ? (
-            <MainDashboard dashboardData={dashboardData} />
-          ) : page === "employees" ? (
-            <Employees dashboardData={dashboardData} />
+            <AvailableCourses name={name} />
           ) : page === "participants" ? (
             <Participants dashboardData={dashboardData} />
           ) : page === "settings" ? (
             <Settings dashboardData={dashboardData} />
-          ) : page === "courses" ? (
-            <AvailableCourses />
           ) : (
             <>Some Error Occured</>
           )}
@@ -183,5 +130,4 @@ const ManagerDashboard = ({ handleLogout, logo, name, dashboardData }) => {
     </>
   );
 };
-
-export default ManagerDashboard;
+export default ParticipantDashboard;

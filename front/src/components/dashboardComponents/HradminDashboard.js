@@ -7,10 +7,13 @@ import MainDashboard from "./sunComponents/MainDashboard";
 import Employees from "./sunComponents/Employees";
 import Participants from "./sunComponents/Participants";
 import Settings from "./sunComponents/Settings";
+import { IoMdAddCircleOutline } from "react-icons/io";
+import AvailableCourses from "./sunComponents/AvailableCourses";
 
 const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState("dashboard");
+  const [formView, setFormView] = useState(false);
   return (
     <>
       {" "}
@@ -47,6 +50,13 @@ const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
                 Participants
               </button>
               <button
+                onClick={() => setPage("courses")}
+                type="button"
+                className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
+              >
+                Courses
+              </button>
+              <button
                 onClick={() => setPage("settings")}
                 type="button"
                 className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
@@ -78,19 +88,57 @@ const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
                 </div>
               </div>
               <div className="flex flex-col font-koulen h-full items-center justify-center">
-                <div className="text-left">
-                  <p className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer">
+                <div className="text-left flex flex-col">
+                  <button
+                    onClick={() => {
+                      setPage("dashboard");
+                      setOpen(false);
+                    }}
+                    type="button"
+                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
+                  >
                     Dashboard
-                  </p>
-                  <p className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer">
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPage("employees");
+                      setOpen(false);
+                    }}
+                    type="button"
+                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
+                  >
                     Employees
-                  </p>
-                  <p className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer">
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPage("participants");
+                      setOpen(false);
+                    }}
+                    type="button"
+                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
+                  >
                     Participants
-                  </p>
-                  <p className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer">
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPage("courses");
+                      setOpen(false);
+                    }}
+                    type="button"
+                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
+                  >
+                    Courses
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPage("settings");
+                      setOpen(false);
+                    }}
+                    type="button"
+                    className="hover:text-primary focus:text-primary transition-all duration-300 text-2xl text-left cursor-pointer"
+                  >
                     Settings
-                  </p>
+                  </button>
                 </div>
               </div>
             </div>
@@ -119,15 +167,31 @@ const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
             <p className="text-primary">HR Admin Dashboard</p>
           </div>{" "}
           {/*  Center part content to be added  */}
-          <div className="flex flex-col justify-center items-center h-max">
+          <div className="flex justify-end w-full px-10">
+            <button
+              type="button"
+              onClick={() => setFormView(true)}
+              className="text-green-600 flex-row flex items-center border-2 border-green-500 rounded-lg p-2 m-2 hover:text-white hover:bg-green-500 transition-all duration-300"
+            >
+              <IoMdAddCircleOutline />
+              <span>Add New Course</span>
+            </button>
+          </div>
+          <div className="flex flex-col h-max">
             {page === "dashboard" ? (
-              <MainDashboard dashboardData={dashboardData} />
+              <MainDashboard
+                dashboardData={dashboardData}
+                formView={formView}
+                setFormView={setFormView}
+              />
             ) : page === "employees" ? (
               <Employees dashboardData={dashboardData} />
             ) : page === "participants" ? (
               <Participants dashboardData={dashboardData} />
             ) : page === "settings" ? (
               <Settings dashboardData={dashboardData} />
+            ) : page === "courses" ? (
+              <AvailableCourses />
             ) : (
               <>Some Error Occured</>
             )}

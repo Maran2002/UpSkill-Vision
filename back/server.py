@@ -12,6 +12,7 @@ import jwt
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 import os
+from send_course_notificaion import send_course_notification_email
 load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
@@ -73,10 +74,9 @@ def verify_data():
         cursor = connection.cursor()
         
         # Query the database for the username and password
-        cursor.execute("SELECT * FROM credentials WHERE email = %s", (email,))
+        cursor.execute("SELECT * FROM userdetails WHERE email = %s", (email,))
         user = cursor.fetchone()
-
-        if user and user[1] == password:
+        if user and user[4] == password:
             otp = generate_otp()
             send_otp_email(email, otp)
             # Insert or update user details
@@ -168,32 +168,39 @@ def protected():
         cursor.execute("SELECT * FROM otp WHERE token = %s", (token,))
         user = cursor.fetchone()
         if user:
-            cursor.execute("SELECT * FROM credentials WHERE email = %s", (user[1],))
-            user1 = cursor.fetchone()
+            # cursor.execute("SELECT * FROM credentials WHERE email = %s", (user[1],))
+            # user1 = cursor.fetchone()
             cursor.execute("SELECT * FROM userdetails WHERE email = %s", (user[1],))
-            get_name = cursor.fetchone()
-            name = get_name[2]
+            user_details = cursor.fetchone()
+            name = user_details[2]
             # Proceed with your logic if the token is valid
-            if user1[2] == "hradmin" and user1[3]==1:
+            if user_details[3] == "hradmin" and user_details[5]==1:
                 query = """
-                SELECT c.email, c.status, u.phone, u.name, u.designation
-                FROM credentials c
-                JOIN userdetails u ON c.email = u.email
+                SELECT email, status, phone, name, designation
+                FROM userdetails 
             """
                 cursor.execute(query)
                 data = cursor.fetchall()
                 return jsonify({"message": "Token is valid","authority":"hradmin", "content":data, "name":name , "email":user[1]}), 200
-            elif user1[2] == "manager" and user1[3]==1:
+            elif user_details[3] == "manager" and user_details[5]==1:
                 query = """
-                    SELECT c.email, c.status, u.phone, u.name, u.designation
-                    FROM credentials c
-                    JOIN userdetails u ON c.email = u.email
-                    WHERE c.user_type != 'hradmin' OR (c.user_type = 'hradmin' AND c.status = 1)
+                    SELECT email, status, phone, name, designation
+                    FROM userdetails
+                    WHERE designation != 'hradmin' OR (designation = 'hradmin' AND status = 1)
                 """
                 cursor.execute(query)
                 data = cursor.fetchall()
                 return jsonify({"message": "Token is valid","authority":"manager", "content":data, "name":name , "email":user[1]}), 200
-            elif user1[2] == "participant" and user1[3]==1:
+            elif user_details[3] == "instructor" and user_details[5]==1:
+                query = """
+                    SELECT email, status, phone, name, designation
+                    FROM userdetails
+                    WHERE designation = 'participant'
+                """
+                cursor.execute(query)
+                data = cursor.fetchall()
+                return jsonify({"message": "Token is valid","authority":"instructor", "content":data, "name":name}), 200
+            elif user_details[3] == "participant" and user_details[5]==1:
                 return jsonify({"message": "Token is valid","authority":"participant", "content":"Courses are yet to be added. Please check back later", "name":name}), 200
             else:
                 return jsonify({"message": "Token not exists or account under validation","underReview":"account under validation"}), 401
@@ -218,7 +225,7 @@ def verifymail():
         cursor = connection.cursor()
         
         # Query the database for the username and password
-        cursor.execute("SELECT * FROM credentials WHERE email = %s", (email,))
+        cursor.execute("SELECT * FROM userdetails WHERE email = %s", (email,))
         user = cursor.fetchone()
 
         if user:
@@ -251,12 +258,12 @@ def update_password():
         cursor = connection.cursor()
         
         # Query the database for the username and password
-        cursor.execute("SELECT * FROM credentials WHERE email = %s", (email,))
+        cursor.execute("SELECT * FROM userdetails WHERE email = %s", (email,))
         user = cursor.fetchone()
 
         if user:
             cursor.execute(
-        "UPDATE credentials SET password = %s WHERE email = %s",
+        "UPDATE userdetails SET password = %s WHERE email = %s",
             (password, email)
         )
         connection.commit()  # Save changes to the database
@@ -319,25 +326,14 @@ def verify_registration():
 
             # Insert or update in the `userdetails` table
             cursor.execute("""
-                INSERT INTO userdetails (email, phone, name, designation)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO userdetails (email, phone, name, designation, password)
+                VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     phone = VALUES(phone),
                     name = VALUES(name),
                     designation = VALUES(designation)
-            """, (email, phone, name, designation))
+            """, (email, phone, name, designation, password))
             connection.commit()
-
-            # Insert or update in the `credentials` table
-            cursor.execute("""
-                INSERT INTO credentials (email, password, user_type)
-                VALUES (%s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    password = VALUES(password),
-                    user_type = VALUES(user_type)
-            """, (email, password, designation))
-            connection.commit()
-
             # Create the response
             response = make_response(jsonify({
                 "message": "Registration Successful",
@@ -355,6 +351,130 @@ def verify_registration():
         connection.close()
 
 
+
+@app.route('/api/approve-user', methods=['POST'])
+def approve_user():
+    try:
+        data = request.get_json()  # Parse JSON request body
+        user_id = data.get('userId')
+        token = data.get('token')
+        updated_user = update_user(token)
+        # Update user status in the database
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        query = "UPDATE userdetails SET status = 1 WHERE email = %s"
+        cursor.execute(query, (user_id,))
+        connection.commit()
+
+        return jsonify({'message': f'User {user_id} approved successfully.', "content":updated_user}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+# Reject User Endpoint
+@app.route('/api/reject-user', methods=['DELETE'])
+def reject_user():
+    try:
+        data = request.get_json()  # Parse JSON request body
+        user_id = data.get('userId')
+        token = data.get('token')
+        updated_user = update_user(token)
+        # Delete user from the database
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        query = "DELETE FROM userdetails WHERE email = %s"
+        cursor.execute(query, (user_id,))
+        connection.commit()
+
+        return jsonify({'message': f'User {user_id} rejected successfully.', "content":updated_user}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def update_user(token):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM otp WHERE token = %s", (token,))
+    user = cursor.fetchone()
+    if user:
+        # cursor.execute("SELECT * FROM credentials WHERE email = %s", (user[1],))
+        # user1 = cursor.fetchone()
+        cursor.execute("SELECT * FROM userdetails WHERE email = %s", (user[1],))
+        user_details = cursor.fetchone()
+        # Proceed with your logic if the token is valid
+        if user_details[3] == "hradmin" and user_details[5]==1:
+            query = """
+            SELECT email, status, phone, name, designation
+            FROM userdetails 
+        """
+            cursor.execute(query)
+            data = cursor.fetchall()
+            return data
+        elif user_details[3] == "manager" and user_details[5]==1:
+            query = """
+                SELECT email, status, phone, name, designation
+                FROM userdetails
+                WHERE designation != 'hradmin' OR (designation = 'hradmin' AND status = 1)
+            """
+            cursor.execute(query)
+            data = cursor.fetchall()
+            return data
+
+
+@app.route('/api/create-course', methods=['POST'])
+def create_course():
+    data = request.get_json()
+    print(data)
+    # Extract course data
+    courseId = data.get('courseId')
+    courseTitle = data.get('courseTitle')
+    description = data.get('description')
+    duration = data.get('duration')
+    startDate = data.get('startDate')
+    endDate = data.get('endDate')
+    instructor = data.get('instructor')
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    # Insert course into the database
+    cursor.execute("""
+        INSERT INTO coursedetails (courseid, title, description, instructor, start_date, end_date )
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, ( data['courseId'], 
+    data['courseTitle'], 
+    data['description'], 
+    data['instructor'],
+    data['startDate'], 
+    data['endDate']
+     ))
+    connection.commit()
+    cursor.execute("SELECT email FROM otp")
+    emails = cursor.fetchall()
+    email_list = [email[0] for email in emails]
+    send_course_notification_email(email_list, data['courseTitle'], data['startDate'], duration)
+
+    return jsonify({'message': 'Course created and emails sent successfully'}), 200
+
+
+@app.route('/api/fetch-courses', methods=["GET"])
+def fetch_courses():
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM coursedetails")
+    courses = cursor.fetchall()
+    # courses_list = [course[0] for course in courses]
+    # print(courses)
+    return jsonify({"message":"course fetch successful", "content":courses})
+
+
+
+
+# def send_bulk_emails():
 # Run the Flask app
 if __name__ == "__main__":
     app.run(debug=True)

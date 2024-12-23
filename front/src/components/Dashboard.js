@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import HradminDashboard from "./dashboardComponents/HradminDashboard";
 import ManagerDashboard from "./dashboardComponents/ManagerDashboard";
 import Swal from "sweetalert2";
+import InstructorDashboard from "./dashboardComponents/InstructorDashboard";
+import ParticipantDashboard from "./dashboardComponents/ParticipantDashboard";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -39,6 +41,8 @@ const Dashboard = () => {
             setAuthority("manager");
           } else if (data.authority === "participant") {
             setAuthority("participant");
+          } else if (data.authority === "instructor") {
+            setAuthority("instructor");
           }
         } else if (data.underReview) {
           setAuthority("");
@@ -80,8 +84,24 @@ const Dashboard = () => {
         dashboardData={dashboardData}
       />
     );
+  } else if (authority === "instructor") {
+    return (
+      <InstructorDashboard
+        handleLogout={handleLogout}
+        logo={logo}
+        name={name}
+        dashboardData={dashboardData}
+      />
+    );
   } else if (authority === "participant") {
-    return <>Participant Dashboard</>;
+    return (
+      <ParticipantDashboard
+        handleLogout={handleLogout}
+        logo={logo}
+        name={name}
+        dashboardData={dashboardData}
+      />
+    );
   }
 };
 
