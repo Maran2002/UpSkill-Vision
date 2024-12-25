@@ -56,6 +56,10 @@ const Login = () => {
     if (formValidation()) {
       try {
         setLoading(true);
+        if (localStorage.getItem("token")) {
+          localStorage.removeItem("token");
+        }
+
         const response = await fetch(
           "http://127.0.0.1:5000/login-verification",
           {
@@ -105,12 +109,13 @@ const Login = () => {
         });
 
         const result = await response.json();
-        sessionStorage.setItem("token", result.token);
+        localStorage.setItem("token", result.token);
+        sessionStorage.setItem("auth_token", result.token);
         if (response.ok) {
-          Swal.fire({
-            icon: "success",
-            title: "Login Successfull",
-          });
+          // Swal.fire({
+          //   icon: "success",
+          //   title: "Login Successfull",
+          // });
           navigate("/dashboard");
         } else {
           throw new Error(result.message);

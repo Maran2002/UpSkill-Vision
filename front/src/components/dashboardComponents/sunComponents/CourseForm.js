@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 
-const CourseForm = ({ tableData, setFormView, name }) => {
+const CourseForm = ({ tableData, setFormView, name, handleCourseAdded }) => {
   const instructorNames =
     tableData && Array.isArray(tableData)
       ? tableData
-          .filter((entry) => entry[4] === "instructor") // Filter where the 4th value is "instructor"
+          .filter((entry) => entry[4] === "instructor" && entry[1] === 1) // Filter where the 4th value is "instructor"
           .map((entry) => entry[3])
       : [];
+  // console.log(tableData);
+
   // Extract the 3rd value (name)
 
   //   console.log(instructorNames);
@@ -49,7 +51,7 @@ const CourseForm = ({ tableData, setFormView, name }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
+    // console.log(formData);
     try {
       // Sending POST request using fetch API
       const response = await fetch("http://localhost:5000/api/create-course", {
@@ -68,11 +70,16 @@ const CourseForm = ({ tableData, setFormView, name }) => {
           text: "The Course have been successfully created and Notification sent",
           icon: "success",
         });
+        handleCourseAdded();
+        // setNa(name);
+        // window.location.reload();
       } else {
-        alert("Error creating course or sending emails");
+        alert("Error creating course or sending emails1");
       }
     } catch (error) {
-      alert("Error creating course or sending emails");
+      alert(
+        "Some error occured try using different course id or try after some time"
+      );
     }
 
     // Add your submission logic here (e.g., API call)

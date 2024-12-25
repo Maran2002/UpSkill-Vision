@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify, make_response
 import random
 import smtplib
+import bcrypt
 import mysql
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import datetime
+from datetime import datetime, timedelta, timezone
 from db_connection import get_db_connection  # Import the connection function
+from session_helpers import save_session_to_db, delete_user_sessions
 from config import EMAIL_CONFIG  # Import credentials for email
 from flask_cors import CORS
 import jwt
@@ -13,14 +15,26 @@ from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 import os
 from send_course_notificaion import send_course_notification_email
+import uuid
 load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 connection = get_db_connection()
 print("server running...")
 JWT_SECRET = os.getenv("JWT_SECRET_TOKEN")
+app.config['SECRET_KEY'] = os.getenv('JWT_SECRET_TOKEN')
 ENCRYPTION_KEY = Fernet.generate_key()
 cipher = Fernet(ENCRYPTION_KEY)
+
+
+# Function to hash a password
+def hash_password(password):
+    # Generate a salt
+    salt = bcrypt.gensalt()
+    # Hash the password with the generated salt
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed_password
+
 # Function to generate a random OTP
 def generate_otp():
     return random.randint(100000, 999999)
@@ -53,8 +67,8 @@ def send_otp_email(recipient_email, otp):
 # Function to generate and encrypt JWT token
 def generate_jwt(email):
     payload = {
-        'email': email,
-        'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)  # Expiration time
+        'email': email+str(uuid.uuid4()),
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
     encrypted_token = cipher.encrypt(token.encode('utf-8'))
@@ -76,7 +90,7 @@ def verify_data():
         # Query the database for the username and password
         cursor.execute("SELECT * FROM userdetails WHERE email = %s", (email,))
         user = cursor.fetchone()
-        if user and user[4] == password:
+        if user and bcrypt.checkpw(password.encode('utf-8'), user[4].encode('utf-8')):
             otp = generate_otp()
             send_otp_email(email, otp)
             # Insert or update user details
@@ -115,23 +129,16 @@ def generate_otp_route():
         cursor.execute("SELECT * FROM otp WHERE email = %s", (email,))
         user = cursor.fetchone()
         if int(req_otp) == user[0]:
-            encrypted_token = generate_jwt(email)
-            cursor.execute("""
-                INSERT INTO otp (email, token)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE
-                token = VALUES(token)
-        """, (email, encrypted_token.decode("utf-8")))
-            connection.commit()
-
-
-            # Create response
+            delete_user_sessions(email)
+            token = generate_jwt(email)
+            
+            
             response = make_response(jsonify({
                 "message": "Data matches!",
                 "status": "success",
-                "token":encrypted_token.decode('utf-8')
+                "token":token.decode('utf-8')
             }))
-       
+            save_session_to_db(email, token)
             return response, 200
         else:
             return jsonify({"message": "Invalid OTP", "status": "error"}), 400
@@ -142,6 +149,31 @@ def generate_otp_route():
         connection.commit()
         cursor.close()
         connection.close()
+@app.route('/logout', methods=['POST'])
+def logout():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request body'}), 400
+        token = data.get("token")
+        if not token:
+            return jsonify({'error': 'Session not found'}), 401
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM otp WHERE token = %s", (token,))
+        session = cursor.fetchone()
+        if not session:
+            return jsonify({'error': 'Session does not exist'}), 404
+        cursor.execute("DELETE FROM otp WHERE token = %s", (token,))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        response = jsonify({'message': 'Logged out successfully'})
+        return response
+
+    except Exception as e:
+        print(f"Error during logout: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 
@@ -168,6 +200,8 @@ def protected():
         cursor.execute("SELECT * FROM otp WHERE token = %s", (token,))
         user = cursor.fetchone()
         if user:
+            if user[3] < datetime.now():
+                return jsonify({'error': 'Session expired'}), 401
             # cursor.execute("SELECT * FROM credentials WHERE email = %s", (user[1],))
             # user1 = cursor.fetchone()
             cursor.execute("SELECT * FROM userdetails WHERE email = %s", (user[1],))
@@ -199,7 +233,7 @@ def protected():
                 """
                 cursor.execute(query)
                 data = cursor.fetchall()
-                return jsonify({"message": "Token is valid","authority":"instructor", "content":data, "name":name}), 200
+                return jsonify({"message": "Token is valid","authority":"instructor", "content":data, "name":name, "email":user[1]}), 200
             elif user_details[3] == "participant" and user_details[5]==1:
                 return jsonify({"message": "Token is valid","authority":"participant", "content":"Courses are yet to be added. Please check back later", "name":name}), 200
             else:
@@ -256,7 +290,7 @@ def update_password():
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
-        
+        hashed_password = hash_password(password)
         # Query the database for the username and password
         cursor.execute("SELECT * FROM userdetails WHERE email = %s", (email,))
         user = cursor.fetchone()
@@ -264,7 +298,7 @@ def update_password():
         if user:
             cursor.execute(
         "UPDATE userdetails SET password = %s WHERE email = %s",
-            (password, email)
+            (hashed_password, email)
         )
         connection.commit()  # Save changes to the database
         return jsonify({"message": "Password updated!", "status": "success"}), 200
@@ -314,15 +348,9 @@ def verify_registration():
         user = cursor.fetchone()
         if int(otp) == user[0]:
             encrypted_token = generate_jwt(email)
-
+            hashed_password = hash_password(password)
             # Insert or update in the `otp` table
-            cursor.execute("""
-                INSERT INTO otp (email, token)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE
-                token = VALUES(token)
-            """, (email, encrypted_token.decode("utf-8")))
-            connection.commit()
+            # save_session_to_db(email, encrypted_token)
 
             # Insert or update in the `userdetails` table
             cursor.execute("""
@@ -332,7 +360,7 @@ def verify_registration():
                     phone = VALUES(phone),
                     name = VALUES(name),
                     designation = VALUES(designation)
-            """, (email, phone, name, designation, password))
+            """, (email, phone, name, designation, hashed_password))
             connection.commit()
             # Create the response
             response = make_response(jsonify({
@@ -358,14 +386,15 @@ def approve_user():
         data = request.get_json()  # Parse JSON request body
         user_id = data.get('userId')
         token = data.get('token')
-        updated_user = update_user(token)
+        # print(token)
         # Update user status in the database
         connection = get_db_connection()
         cursor = connection.cursor()
         query = "UPDATE userdetails SET status = 1 WHERE email = %s"
         cursor.execute(query, (user_id,))
         connection.commit()
-
+        updated_user = update_user(token)
+        # print(updated_user)
         return jsonify({'message': f'User {user_id} approved successfully.', "content":updated_user}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -380,13 +409,14 @@ def reject_user():
         data = request.get_json()  # Parse JSON request body
         user_id = data.get('userId')
         token = data.get('token')
-        updated_user = update_user(token)
+        # print(token)
         # Delete user from the database
         connection = get_db_connection()
         cursor = connection.cursor()
         query = "DELETE FROM userdetails WHERE email = %s"
         cursor.execute(query, (user_id,))
         connection.commit()
+        updated_user = update_user(token)
 
         return jsonify({'message': f'User {user_id} rejected successfully.', "content":updated_user}), 200
     except Exception as e:
@@ -429,7 +459,7 @@ def update_user(token):
 @app.route('/api/create-course', methods=['POST'])
 def create_course():
     data = request.get_json()
-    print(data)
+    # print(data)
     # Extract course data
     courseId = data.get('courseId')
     courseTitle = data.get('courseTitle')
@@ -455,10 +485,12 @@ def create_course():
     connection.commit()
     cursor.execute("SELECT email FROM otp")
     emails = cursor.fetchall()
+    cursor.execute("SELECT * FROM coursedetails")
+    courses = cursor.fetchall()
     email_list = [email[0] for email in emails]
     send_course_notification_email(email_list, data['courseTitle'], data['startDate'], duration)
 
-    return jsonify({'message': 'Course created and emails sent successfully'}), 200
+    return jsonify({'message': 'Course created and emails sent successfully', "updated_courses":courses}), 200
 
 
 @app.route('/api/fetch-courses', methods=["GET"])
@@ -472,7 +504,64 @@ def fetch_courses():
     return jsonify({"message":"course fetch successful", "content":courses})
 
 
+# Delete Course
+@app.route('/api/delete-course/<course_id>', methods=["DELETE"])
+def delete_course(course_id):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    
+    # Check if the course exists
+    cursor.execute("SELECT * FROM coursedetails WHERE courseid = %s", (course_id,))
+    course = cursor.fetchone()
+    
+    if course is None:
+        connection.close()
+        return jsonify({"message": "Course not found", "status": "error"}), 404
+    
+    # Delete the course
+    cursor.execute("DELETE FROM coursedetails WHERE courseid = %s", (course_id,))
+    connection.commit()
+    connection.close()
+    
+    return jsonify({"message": "Course deleted successfully", "status": "success"})
 
+# Update Course
+@app.route('/api/update-course/<course_id>', methods=["PUT"])
+def update_course(course_id):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    
+    # Get the new course data from the request
+    data = request.get_json()
+    name = data.get("name")
+    instructor = data.get("instructor")
+    description = data.get("description")
+    start_date = data.get("startDate")
+    end_date = data.get("endDate")
+    
+    # Check if all required fields are provided
+    if not name or not instructor or not description or not start_date or not end_date:
+        connection.close()
+        return jsonify({"message": "Missing required fields", "status": "error"}), 400
+    
+    # Check if the course exists
+    cursor.execute("SELECT * FROM coursedetails WHERE courseid = %s", (course_id,))
+    course = cursor.fetchone()
+    
+    if course is None:
+        connection.close()
+        return jsonify({"message": "Course not found", "status": "error"}), 404
+    
+    # Update the course
+    cursor.execute("""
+        UPDATE coursedetails
+        SET title = %s, description = %s, instructor = %s, start_date = %s, end_date = %s
+        WHERE courseid = %s
+    """, (name, description, instructor, start_date, end_date, course_id))
+    connection.commit()
+    connection.close()
+    
+    return jsonify({"message": "Course updated successfully", "status": "success"})
 
 # def send_bulk_emails():
 # Run the Flask app

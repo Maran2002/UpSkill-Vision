@@ -10,7 +10,13 @@ import Settings from "./sunComponents/Settings";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import AvailableCourses from "./sunComponents/AvailableCourses";
 
-const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
+const HradminDashboard = ({
+  handleLogout,
+  logo,
+  name,
+  dashboardData,
+  setDashboardData,
+}) => {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState("dashboard");
   const [formView, setFormView] = useState(false);
@@ -26,7 +32,7 @@ const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
               <p className="flex items-start text-2xl  text-red-500">vision</p>
             </div>
           </div>
-          <div className="flex flex-col font-koulen h-full items-center justify-center">
+          <div className="flex flex-col font-koulen h-full items-center justify-center sticky">
             <div className="text-left flex flex-col">
               <button
                 onClick={() => setPage("dashboard")}
@@ -144,7 +150,7 @@ const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
             </div>
           </div>
         )}
-        <div className="flex flex-col w-4/5">
+        <div className="flex flex-col w-4/5 overflow-x-auto h-screen">
           <div className="flex flex-row flex-wrap items-center justify-around  h-max p-5 ">
             {/* <div className="flex  w-96 rounded-full inner-shadow h-max p-1 items-center m-2">
               <div className="flex flex-row items-center">
@@ -183,9 +189,13 @@ const HradminDashboard = ({ handleLogout, logo, name, dashboardData }) => {
                 dashboardData={dashboardData}
                 formView={formView}
                 setFormView={setFormView}
+                setDashboardData={setDashboardData}
               />
             ) : page === "employees" ? (
-              <Employees dashboardData={dashboardData} />
+              <Employees
+                dashboardData={dashboardData}
+                setDashboardData={setDashboardData}
+              />
             ) : page === "participants" ? (
               <Participants dashboardData={dashboardData} />
             ) : page === "settings" ? (

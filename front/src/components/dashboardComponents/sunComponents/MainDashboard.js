@@ -1,15 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { IoMdCheckmarkCircle } from "react-icons/io";
 import { TbXboxX } from "react-icons/tb";
 import Swal from "sweetalert2";
 import CourseForm from "./CourseForm";
-const MainDashboard = ({ dashboardData, formView, setFormView }) => {
-  const [tableData, setTableData] = useState(dashboardData);
-
-  const filterWhereStatusZero = tableData.filter((item) => item[1] === 0);
+const MainDashboard = ({
+  dashboardData,
+  formView,
+  setFormView,
+  setDashboardData,
+}) => {
+  // const [tableData, setTableData] = useState(dashboardData);
+  const [filteredData, setFilteredData] = useState([]);
+  useEffect(() => {
+    const filterWhereStatusZero =
+      dashboardData &&
+      dashboardData.filter((item) => item[1] !== null && item[1] === 0);
+    setFilteredData(filterWhereStatusZero);
+  }, [dashboardData]);
   const handleApprove = async (userId) => {
     try {
-      const token = sessionStorage.getItem("token");
+      const token = sessionStorage.getItem("auth_token");
       const response = await fetch(`http://127.0.0.1:5000/api/approve-user`, {
         method: "POST",
         headers: {
@@ -23,7 +33,8 @@ const MainDashboard = ({ dashboardData, formView, setFormView }) => {
           title: "User Access Approved",
           icon: "success",
         });
-        setTableData(data.content);
+        // console.log(data.content);
+        setDashboardData(data.content);
       } else {
         console.error(`Failed to approve user ${userId}.`);
       }
@@ -34,7 +45,7 @@ const MainDashboard = ({ dashboardData, formView, setFormView }) => {
 
   const handleReject = async (userId) => {
     try {
-      const token = sessionStorage.getItem("token");
+      const token = sessionStorage.getItem("auth_token");
       const response = await fetch(`http://127.0.0.1:5000/api/reject-user`, {
         method: "DELETE",
         headers: {
@@ -48,8 +59,15 @@ const MainDashboard = ({ dashboardData, formView, setFormView }) => {
           title: "User Access Rejected",
           icon: "success",
         });
+        setDashboardData(data.content);
         // console.dir(data.content);
-        setTableData(data.content);
+        // const fildata = data.content;
+        // const filtered = fildata.filter(
+        //   (item) => item[1] !== null && item[1] === 0
+        // );
+        // setTableData(data.content);
+        // setFilteredData(filtered);
+        // window.location.reload();
       } else {
         console.error(`Failed to reject user ${userId}.`);
       }
@@ -100,10 +118,10 @@ const MainDashboard = ({ dashboardData, formView, setFormView }) => {
     <div className="w-full justify-center items-center flex flex-col">
       {formView && (
         <div className="absolute w-full top-0 overlay overflow-visible">
-          <CourseForm tableData={tableData} setFormView={setFormView} />
+          <CourseForm tableData={dashboardData} setFormView={setFormView} />
         </div>
       )}
-      <div>{renderTable(filterWhereStatusZero)}</div>
+      <div>{renderTable(filteredData)}</div>
     </div>
   );
 };

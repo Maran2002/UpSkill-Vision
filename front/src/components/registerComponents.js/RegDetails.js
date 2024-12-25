@@ -115,6 +115,7 @@ const RegDetails = ({ setRegPage, setUserDetail }) => {
             <option value="">Please select</option>
             <option value="hradmin">HR Admin</option>
             <option value="manager">Manager</option>
+            <option value="instructor">instructor</option>
             <option value="participant">Participant</option>
           </select>
           {userDetailsError.designation && (

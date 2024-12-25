@@ -12,7 +12,12 @@ const InstructorDashboard = ({ handleLogout, logo, name, dashboardData }) => {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState("dashboard");
   const [formView, setFormView] = useState(false);
-  //   console.log("from ins dash", dashboardData);
+  const [updateTrigger, setUpdateTrigger] = useState(false);
+
+  const handleCourseAdded = () => {
+    // Toggle the trigger to refresh courses
+    setUpdateTrigger((prev) => !prev);
+  };
 
   return (
     <>
@@ -111,7 +116,7 @@ const InstructorDashboard = ({ handleLogout, logo, name, dashboardData }) => {
             </div>
           </div>
         )}
-        <div className="flex flex-col w-4/5">
+        <div className="flex flex-col w-4/5 overflow-x-auto h-screen">
           <div className="flex flex-row flex-wrap items-center justify-around  h-max p-5 ">
             {/* <div className="flex  w-96 rounded-full inner-shadow h-max p-1 items-center m-2">
             <div className="flex flex-row items-center">
@@ -146,11 +151,15 @@ const InstructorDashboard = ({ handleLogout, logo, name, dashboardData }) => {
           </div>
           {formView && (
             <div className="absolute w-full top-0 overlay overflow-visible">
-              <CourseForm name={name} setFormView={setFormView} />
+              <CourseForm
+                name={name}
+                setFormView={setFormView}
+                handleCourseAdded={handleCourseAdded}
+              />
             </div>
           )}
           {page === "dashboard" ? (
-            <AvailableCourses name={name} />
+            <AvailableCourses name={name} updateTrigger={updateTrigger} />
           ) : page === "participants" ? (
             <Participants dashboardData={dashboardData} />
           ) : page === "settings" ? (

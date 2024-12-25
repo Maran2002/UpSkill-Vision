@@ -66,9 +66,9 @@ const RegOtp = ({ setRegPage, userPassword, userDetails, setLoading }) => {
         Swal.fire({
           icon: "success",
           title: "Registration Successful",
-          text: "Registration completed successfully, You will be redirected now!",
+          text: "Registration completed successfully, Your account will be activated soon!!",
         });
-        navigate("/dashboard");
+        navigate("/");
       } else {
         throw new Error(result.message);
       }

@@ -10,9 +10,20 @@ import ParticipantDashboard from "./dashboardComponents/ParticipantDashboard";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const handleLogout = () => {
-    navigate("/");
-    sessionStorage.removeItem("token");
+  const handleLogout = async () => {
+    const token = sessionStorage.getItem("auth_token");
+    const response = await fetch("http://127.0.0.1:5000/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+      credentials: "include", // Include cookies with requests
+    });
+    if (response.ok) {
+      navigate("/");
+      sessionStorage.removeItem("auth_token");
+    } else {
+      alert("try again");
+    }
   };
   const [dashboardData, setDashboardData] = useState({});
   const [authority, setAuthority] = useState("");
@@ -20,7 +31,14 @@ const Dashboard = () => {
   useEffect(() => {
     const verifyAuthentication = async () => {
       try {
-        const token = sessionStorage.getItem("token");
+        let token;
+
+        if (
+          localStorage.getItem("token") === sessionStorage.getItem("auth_token")
+        ) {
+          token = sessionStorage.getItem("auth_token");
+        }
+
         const response = await fetch("http://127.0.0.1:5000/api/protected", {
           method: "GET",
           credentials: "include", // Include cookies in the request
@@ -73,6 +91,7 @@ const Dashboard = () => {
         logo={logo}
         name={name}
         dashboardData={dashboardData}
+        setDashboardData={setDashboardData}
       />
     );
   } else if (authority === "manager") {
@@ -82,6 +101,7 @@ const Dashboard = () => {
         logo={logo}
         name={name}
         dashboardData={dashboardData}
+        setDashboardData={setDashboardData}
       />
     );
   } else if (authority === "instructor") {

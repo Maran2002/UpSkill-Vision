@@ -4,7 +4,8 @@ import { MdMenu } from "react-icons/md";
 import { AiOutlineClose } from "react-icons/ai";
 import Participants from "./sunComponents/Participants";
 import Settings from "./sunComponents/Settings";
-import AvailableCourses from "./sunComponents/AvailableCourses";
+// import AvailableCourses from "./sunComponents/AvailableCourses";
+import Courses from "./sunComponents/Courses";
 
 const ParticipantDashboard = ({ handleLogout, logo, name, dashboardData }) => {
   const [open, setOpen] = useState(false);
@@ -93,7 +94,7 @@ const ParticipantDashboard = ({ handleLogout, logo, name, dashboardData }) => {
             </div>
           </div>
         )}
-        <div className="flex flex-col w-4/5">
+        <div className="flex flex-col w-4/5 overflow-x-auto h-screen">
           <div className="flex flex-row flex-wrap items-center justify-around  h-max p-5 ">
             {/* <div className="flex  w-96 rounded-full inner-shadow h-max p-1 items-center m-2">
             <div className="flex flex-row items-center">
@@ -117,7 +118,7 @@ const ParticipantDashboard = ({ handleLogout, logo, name, dashboardData }) => {
           </div>{" "}
           {/*  Center part content to be added  */}
           {page === "dashboard" ? (
-            <AvailableCourses name={name} />
+            <Courses />
           ) : page === "participants" ? (
             <Participants dashboardData={dashboardData} />
           ) : page === "settings" ? (
