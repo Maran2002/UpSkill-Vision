@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Course Update Notification</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 20px auto;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        overflow: hidden;
+        background-color: #ffffff;
+      }
+
+      .email-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #027fff;
+        color: #ffffff;
+        padding: 0;
+      }
+
+      .email-header-logo {
+        background-color: white;
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .email-header-logo img {
+        max-width: 100px;
+        margin-left: 20px;
+      }
+
+      .email-header-content {
+        flex: 1;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .email-header-content h1 {
+        margin: 0;
+      }
+
+      .email-body {
+        padding: 20px;
+      }
+
+      .email-body h2 {
+        color: #333;
+      }
+
+      .email-body p {
+        line-height: 1.6;
+        color: #555;
+      }
+
+      .email-body .details {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-left: 4px solid #027fff;
+      }
+
+      .email-body .cta {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: #027fff;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+
+      .email-footer {
+        background-color: #f1f1f1;
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        color: #777;
+      }
+
+      .email-footer a {
+        color: blue;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <!-- Header Section -->
+      <div class="email-header">
+        <!-- Logo Section with White Background -->
+        <div class="email-header-logo">
+          <table
+            align="center"
+            style="
+              margin: 0 auto;
+              background-color: white;
+              padding: 10px;
+              border-radius: 10px;
+            "
+          >
+            <tr>
+              <td align="center">
+                <img
+                  src="https://drive.google.com/uc?export=view&id=1-CMUKz5ExSYP8FWvc_Bn-38pW5qnopZK"
+                  alt="Company Logo"
+                  style="display: block; max-width: 100px"
+                />
+              </td>
+            </tr>
+          </table>
+        </div>
+        <!-- Text Section with Blue Background -->
+        <div class="email-header-content">
+          <h1>Course Update</h1>
+          <p>Stay informed about your learning opportunities</p>
+        </div>
+      </div>
+
+      <!-- Body Section -->
+      <div class="email-body">
+        <h2>Changes Made in Course: {course_name}</h2>
+        <p>Dear Team Member,</p>
+        <p>
+          We are here to inform you about changes made in the course enrollment.
+          This is a great opportunity to enhance your skills and grow
+          professionally. Upskill yourself with <b>UpSkill Vision</b>
+        </p>
+
+        <div class="details">
+          <p><strong>Course Title:</strong> {course_name}</p>
+          <p><strong>Start Date:</strong> {start_date}</p>
+          <p><strong>Duration:</strong> {duration}</p>
+        </div>
+
+        <p>Visit our site to view full changes</p>
+        <!-- <a href="{enrollment_link}" class="cta">Enroll Now</a> -->
+      </div>
+
+      <!-- Footer Section -->
+      <div class="email-footer">
+        <p>&copy; 2024 UpSkill-Vision. All Rights Reserved.</p>
+        <p>
+          <!-- <a href="{unsubscribe_link}">Unsubscribe</a> |
+          <a href="{company_website}">Visit Our Website</a> -->
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

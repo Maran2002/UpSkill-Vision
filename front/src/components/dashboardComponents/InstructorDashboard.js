@@ -139,16 +139,6 @@ const InstructorDashboard = ({ handleLogout, logo, name, dashboardData }) => {
             <p className="text-primary">Instructor Dashboard</p>
           </div>{" "}
           {/*  Center part content to be added  */}
-          <div className="flex justify-end w-full px-10">
-            <button
-              type="button"
-              onClick={() => setFormView(true)}
-              className="text-green-600 flex-row flex items-center border-2 border-green-500 rounded-lg p-2 m-2 hover:text-white hover:bg-green-500 transition-all duration-300"
-            >
-              <IoMdAddCircleOutline />
-              <span>Add New Course</span>
-            </button>
-          </div>
           {formView && (
             <div className="absolute w-full top-0 overlay overflow-visible">
               <CourseForm
@@ -159,7 +149,19 @@ const InstructorDashboard = ({ handleLogout, logo, name, dashboardData }) => {
             </div>
           )}
           {page === "dashboard" ? (
-            <AvailableCourses name={name} updateTrigger={updateTrigger} />
+            <>
+              <div className="flex justify-end w-full px-10">
+                <button
+                  type="button"
+                  onClick={() => setFormView(true)}
+                  className="text-green-600 flex-row flex items-center border-2 border-green-500 rounded-lg p-2 m-2 hover:text-white hover:bg-green-500 transition-all duration-300"
+                >
+                  <IoMdAddCircleOutline />
+                  <span>Add New Course</span>
+                </button>
+              </div>
+              <AvailableCourses name={name} updateTrigger={updateTrigger} />
+            </>
           ) : page === "participants" ? (
             <Participants dashboardData={dashboardData} />
           ) : page === "settings" ? (

@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from db_connection import get_db_connection  # Import the connection function
+from send_update_notificaion import send_course_update_notification_email
 from session_helpers import save_session_to_db, delete_user_sessions
 from config import EMAIL_CONFIG  # Import credentials for email
 from flask_cors import CORS
@@ -43,7 +44,9 @@ def generate_otp():
 def send_otp_email(recipient_email, otp):
     try:
         sender_email = EMAIL_CONFIG["email"]
+        # sender_email = "kunalbhanuse07@gmail.com"
         sender_password = EMAIL_CONFIG["password"]
+        # sender_password = "yena prgc vllq gugg"
 
         # Set up the email
         message = MIMEMultipart()
@@ -653,7 +656,10 @@ def update_course(course_id):
     description = data.get("description")
     start_date = data.get("startDate")
     end_date = data.get("endDate")
-    
+    duration = data.get("duration")
+    token = data.get("token")
+
+    # print(token)
     # Check if all required fields are provided
     if not name or not instructor or not description or not start_date or not end_date:
         connection.close()
@@ -670,15 +676,95 @@ def update_course(course_id):
     # Update the course
     cursor.execute("""
         UPDATE coursedetails
-        SET title = %s, description = %s, instructor = %s, start_date = %s, end_date = %s
+        SET title = %s, description = %s, instructor = %s, start_date = %s, end_date = %s, duration=%s
         WHERE courseid = %s
-    """, (name, description, instructor, start_date, end_date, course_id))
+    """, (name, description, instructor, start_date, end_date, duration, course_id))
+
+    cursor.execute("SELECT * FROM otp WHERE token = %s", (token,))
+    user = cursor.fetchone()
+    cursor.execute("SELECT * FROM userdetails WHERE email = %s", (user[1],))
+    user_details = cursor.fetchone()
+    # print(user_details[0], user_details[2])
+    cursor.execute(
+        """INSERT INTO audit_trail (courseid, email, name, timestamp)
+           VALUES (%s, %s, %s, NOW());
+        """, 
+        (course_id, user_details[0], user_details[2])
+    )
+    cursor.execute("SELECT * FROM otp")
+    emails = cursor.fetchall()
+    email_list = [email[1] for email in emails]
+    print(email_list)
+    send_course_update_notification_email(email_list, name, start_date, duration)
+
+
+
     connection.commit()
     connection.close()
     
     return jsonify({"message": "Course updated successfully", "status": "success"})
 
-# def send_bulk_emails():
-# Run the Flask app
+@app.route('/api/enrolled-students/<course_id>', methods=['GET'])
+def fetch_enrolled_students(course_id):
+    # print("req received")
+    try:
+        # Establish database connection
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        # print("DB")
+        # Query to fetch email IDs for the given course_id
+        email_query = """
+            SELECT email 
+            FROM user_courses 
+            WHERE courseid = %s
+        """
+        cursor.execute(email_query, (course_id,))
+        email_results = cursor.fetchall()
+        
+        if not email_results:
+            return jsonify({
+                "status": "failure",
+                "message": f"No students enrolled for course ID {course_id}"
+            }), 200
+        # print("email fetck")
+        # print(email_results)
+        # Extract email IDs
+        emails = [row[0] for row in email_results]
+
+        # print(emails)
+        # Query to fetch names using email IDs
+        format_strings = ','.join(['%s'] * len(emails))
+        name_query = f"""
+            SELECT name 
+            FROM userdetails 
+            WHERE email IN ({format_strings})
+        """
+        cursor.execute(name_query, tuple(emails))
+        name_results = cursor.fetchall()
+        # print(name_results)
+        if not name_results:
+            return jsonify({
+                "status": "failure",
+                "message": "No user details found for the enrolled students"
+            }), 404
+
+        # Extract names
+        names = [row[0] for row in name_results]
+
+        return jsonify({
+            "status": "success",
+            "content": names
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "failure",
+            "message": f"Unexpected error: {str(e)}"
+        }), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+
 if __name__ == "__main__":
     app.run(debug=True)

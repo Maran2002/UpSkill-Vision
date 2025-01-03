@@ -173,24 +173,26 @@ const HradminDashboard = ({
             <p className="text-primary">HR Admin Dashboard</p>
           </div>{" "}
           {/*  Center part content to be added  */}
-          <div className="flex justify-end w-full px-10">
-            <button
-              type="button"
-              onClick={() => setFormView(true)}
-              className="text-green-600 flex-row flex items-center border-2 border-green-500 rounded-lg p-2 m-2 hover:text-white hover:bg-green-500 transition-all duration-300"
-            >
-              <IoMdAddCircleOutline />
-              <span>Add New Course</span>
-            </button>
-          </div>
           <div className="flex flex-col h-max">
             {page === "dashboard" ? (
-              <MainDashboard
-                dashboardData={dashboardData}
-                formView={formView}
-                setFormView={setFormView}
-                setDashboardData={setDashboardData}
-              />
+              <>
+                <div className="flex justify-end w-full px-10">
+                  <button
+                    type="button"
+                    onClick={() => setFormView(true)}
+                    className="text-green-600 flex-row flex items-center border-2 border-green-500 rounded-lg p-2 m-2 hover:text-white hover:bg-green-500 transition-all duration-300"
+                  >
+                    <IoMdAddCircleOutline />
+                    <span>Add New Course</span>
+                  </button>
+                </div>
+                <MainDashboard
+                  dashboardData={dashboardData}
+                  formView={formView}
+                  setFormView={setFormView}
+                  setDashboardData={setDashboardData}
+                />
+              </>
             ) : page === "employees" ? (
               <Employees
                 dashboardData={dashboardData}
@@ -201,7 +203,7 @@ const HradminDashboard = ({
             ) : page === "settings" ? (
               <Settings dashboardData={dashboardData} />
             ) : page === "courses" ? (
-              <AvailableCourses />
+              <AvailableCourses dashboardData={dashboardData} />
             ) : (
               <>Some Error Occured</>
             )}
